@@ -12,7 +12,7 @@ RESOURCE_PATH = {
     'TAG_CLASSIFIER': 'tag_classifier.pkl',
     'TFIDF_VECTORIZER': 'tfidf_vectorizer.pkl',
     'THREAD_EMBEDDINGS_FOLDER': 'thread_embeddings_by_tags',
-    'WORD_EMBEDDINGS': 'word_embeddings.tsv',
+    'WORD_EMBEDDINGS': 'ss_embeddings.tsv',
 }
 
 
@@ -46,9 +46,15 @@ def load_embeddings(embeddings_path):
     # Note that here you also need to know the dimension of the loaded embeddings.
     # When you load the embeddings, use numpy.float32 type as dtype
 
-    ########################
-    #### YOUR CODE HERE ####
-    ########################
+    starspace_embeddings = {}
+    dim = 0
+    for line in open(embeddings_path):
+        word, *embeddings = line.split('\t')
+        starspace_embeddings[word] = np.array(embeddings, dtype=np.float32)
+        if dim == 0:
+            dim = len(embeddings)
+
+    return starspace_embeddings, dim 
 
     # remove this when you're done
     raise NotImplementedError(
@@ -62,9 +68,18 @@ def question_to_vec(question, embeddings, dim):
 
     # Hint: you have already implemented exactly this function in the 3rd assignment.
 
-    ########################
-    #### YOUR CODE HERE ####
-    ########################
+    question_embeddings = []
+    
+    for word in question.split():
+        
+        if word in embeddings:
+            
+            question_embeddings.append(embeddings[word])
+    
+    if len(question_embeddings) == 0:
+        question_embeddings = [np.zeros(dim)]
+    
+    return np.mean(np.array(question_embeddings), axis=0)
 
     # remove this when you're done
     raise NotImplementedError(
