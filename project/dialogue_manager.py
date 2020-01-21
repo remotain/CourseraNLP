@@ -1,5 +1,5 @@
 import os
-from sklearn.metrics.pairwise import pairwise_distances_argmin
+from sklearn.metrics.pairwise import pairwise_distances_argmin, pairwise_distances_argmin_min
 
 from chatterbot import ChatBot
 from utils import *
@@ -23,10 +23,20 @@ class ThreadRanker(object):
 
         # HINT: you have already implemented a similar routine in the 3rd assignment.
         
-        question_vec = question_to_vec(question, thread_embeddings, self.embeddings_dim )
-        best_thread = pairwise_distances_argmin(question_vec.reshape(1, -1), thread_embeddings)
+        question_vec = question_to_vec(question, self.word_embeddings, self.embeddings_dim )
+        best_thread = pairwise_distances_argmin([question_vec], thread_embeddings)[0]
         
-        return thread_ids[best_thread[0]]
+        return thread_ids[best_thread]
+
+        #n = int(len(thread_ids) / 2)
+        #best_thread1, dist1 = pairwise_distances_argmin_min(question_vec.reshape((1, self.embeddings_dim)), thread_embeddings[:n, :], metric='cosine')
+        #best_thread2, dist2 = pairwise_distances_argmin_min(question_vec.reshape((1, self.embeddings_dim)), thread_embeddings[n:, :], metric='cosine')
+
+        #if dist1[0] <= dist2[0]:
+        #    best_thread = best_thread1[0]
+        #else:
+        #    best_thread = best_thread2[0] + n
+        #return thread_ids[best_thread]
 
 
 class DialogueManager(object):
@@ -54,11 +64,9 @@ class DialogueManager(object):
         # and then calling *train* function with "chatterbot.corpus.english" param
         
         from chatterbot.trainers import ChatterBotCorpusTrainer
-        chatbot = ChatBot('ChitChat')
-        trainer = ChatterBotCorpusTrainer(chatbot)
+        self.chitchat_bot = ChatBot('ChitChat')
+        trainer = ChatterBotCorpusTrainer(self.chitchat_bot)
         trainer.train('chatterbot.corpus.english')
-        self.chitchat_bot = chatbot 
-
 
     def generate_answer(self, question):
         """Combines stackoverflow and chitchat parts using intent recognition."""
@@ -81,10 +89,10 @@ class DialogueManager(object):
         # Goal-oriented part:
         else:        
             # Pass features to tag_classifier to get predictions.
-            tag = self.tag_classifier.predict(features)
+            tag = self.tag_classifier.predict(features)[0]
 
             # Pass prepared_question to thread_ranker to get predictions.
-            thread_id = self.thread_ranker.get_best_thread(prepared_question, tag[0])
+            thread_id = self.thread_ranker.get_best_thread(prepared_question, tag)
            
             return self.ANSWER_TEMPLATE % (tag, thread_id)
 
